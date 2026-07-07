@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="护士助手">
+<meta name="theme-color" content="#1a6b7a">
+<meta name="description" content="护士工作助手 - 待办提醒、文书模板、药物查询">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>护士工作助手</title>
+<style>
+/* ===== 基础变量与重置 ===== */
+:root {
+  --primary: #2c7a8c;
+  --primary-light: #e8f4f8;
+  --danger: #d94a5d;
+  --success: #3cb878;
+  --warning: #f0a040;
+  --bg: #f5f7fa;
+  --card: #fff;
+  --text: #2d3436;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 520px;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== 顶部导航 ===== */
+.header {
+  background: linear-gradient(135deg, #1a6b7a, #2c7a8c);
+  color: #fff;
+  padding: 16px 20px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.header h1 { font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+
+.header .clock {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+
+.header .date {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* ===== 标签栏 ===== */
+.tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 6px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+  min-width: 0;
+  user-select: none;
+}
+
+.tab:hover { color: var(--primary); background: var(--primary-light); }
+
+.tab.active {
+  color: var(--primary);
+  font-weight: 600;
+  border-bottom-color: var(--primary);
+}
+
+.tab .tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+/* ===== 内容区 ===== */
+.content { flex: 1; padding: 16px; overflow-y: auto; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== 卡片 ===== */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.card-time {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: 8px;
+  background: var(--primary-light);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.card-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+/* ===== 按钮 ===== */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #236a7a; }
+
+.btn-danger { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
+.btn-danger:hover { background: #fef2f2; }
+
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #35a56c; }
+
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-xs { padding: 3px 8px; font-size: 11px; border-radius: 4px; }
+
+.btn-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 26px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(44,122,140,0.4);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-fab:hover { background: #236a7a; transform: scale(1.05); }
+
+/* ===== 完成状态 ===== */
+.task-completed .card-title { text-decoration: line-through; color: #9ca3af; }
+.task-completed .card-content { color: #d1d5db; }
+.task-completed .card-time { background: #f0fdf4; color: var(--success); }
+.task-completed { opacity: 0.6; }
+
+/* ===== 统计卡片 ===== */
+.stats-row { display: flex; gap: 12px; margin-bottom: 16px; }
+
+.stat-card {
+  flex: 1;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+.stat-card.warning .stat-value { color: var(--warning); }
+.stat-card.success .stat-value { color: var(--success); }
+
+/* ===== 待办筛选 ===== */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.filter-chip.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* ===== 模板分类 ===== */
+.category-list {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.category-item {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.category-item.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.template-card {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.template-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(44,122,140,0.12);
+}
+
+.template-card .card-content {
+  max-height: 120px;
+  overflow: hidden;
+  position: relative;
+}
+
+.template-card .card-content::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(transparent, #fff);
+}
+
+.template-category-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+/* ===== 搜索框 ===== */
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus { border-color: var(--primary); }
+
+/* ===== 模态框 ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: slideUp 0.25s;
+}
+
+.modal h3 { font-size: 17px; margin-bottom: 16px; text-align: center; }
+
+.form-group { margin-bottom: 14px; }
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus { border-color: var(--primary); }
+
+.form-group textarea { resize: vertical; min-height: 80px; }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions .btn { flex: 1; text-align: center; justify-content: center; padding: 12px; }
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+
+/* ===== 空状态 ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty-state p { font-size: 14px; }
+
+/* ===== 图片上传区 ===== */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.upload-zone:hover { border-color: var(--primary); background: var(--primary-light); }
+
+.upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
+
+.upload-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.drug-result {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary);
+}
+
+.drug-result .drug-name { font-size: 16px; font-weight: 600; color: var(--primary); }
+.drug-result .drug-category { font-size: 12px; color: var(--text-secondary); margin: 4px 0 8px; }
+.drug-result .drug-section { font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.6; }
+.drug-result .drug-section strong { color: var(--text); }
+
+/* ===== 已完成徽章 ===== */
+.badge-done {
+  display: inline-block;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 400px) {
+  .tab { font-size: 11px; padding: 10px 4px; }
+  .tab .tab-icon { font-size: 16px; }
+  .stats-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+
+  <!-- 顶部 -->
+  <div class="header">
+    <h1>🏥 护士工作助手</h1>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="date" id="dateDisplay">----年--月--日 星期-</div>
+  </div>
+
+  <!-- 标签栏 -->
+  <div class="tabs">
+    <div class="tab active" data-page="dashboard">
+      <span class="tab-icon">📋</span>今日总览
+    </div>
+    <div class="tab" data-page="tasks">
+      <span class="tab-icon">✅</span>待办事项
+    </div>
+    <div class="tab" data-page="templates">
+      <span class="tab-icon">📝</span>文书模板
+    </div>
+    <div class="tab" data-page="drugs">
+      <span class="tab-icon">💊</span>药物查询
+    </div>
+  </div>
+
+  <!-- 页面内容 -->
+  <div class="content" id="content">
+
+    <!-- ===== 今日总览 ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">今日任务</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-value" id="statDone">0</div>
+          <div class="stat-label">已完成</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-value" id="statPending">0</div>
+          <div class="stat-label">待处理</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;margin-bottom:12px;color:var(--text-secondary);">⏰ 即将到来</h3>
+      <div id="upcomingTasks"></div>
+
+      <h3 style="font-size:15px;margin-bottom:12px;color:var(--text-secondary);">📌 今日全部计划</h3>
+      <div id="todayAllTasks"></div>
+    </div>
+
+    <!-- ===== 待办事项 ===== -->
+    <div class="page" id="page-tasks">
+      <div class="filter-row">
+        <span class="filter-chip active" data-filter="all">全部</span>
+        <span class="filter-chip" data-filter="pending">待完成</span>
+        <span class="filter-chip" data-filter="done">已完成</span>
+      </div>
+      <div id="taskList"></div>
+    </div>
+
+    <!-- ===== 文书模板 ===== -->
+    <div class="page" id="page-templates">
+      <div class="category-list" id="categoryList"></div>
+      <div id="templateList"></div>
+    </div>
+
+    <!-- ===== 药物查询 ===== -->
+    <div class="page" id="page-drugs">
+      <div class="search-box">
+        <input type="text" class="search-input" id="drugSearch" placeholder="输入药品名称搜索..." autocomplete="off">
+      </div>
+      <div class="upload-zone" id="uploadZone" title="拍照识别药物（功能开发中）">
+        <div class="upload-icon">📸</div>
+        <div style="font-size:13px;color:var(--text-secondary);">拍照识别药物（点击上传图片）</div>
+        <div style="font-size:11px;color:#9ca3af;">OCR识别功能开发中，当前仅存储图片</div>
+      </div>
+      <input type="file" id="imageInput" accept="image/*" capture="environment" style="display:none;">
+      <div id="uploadPreview"></div>
+      <div id="drugResults"></div>
+    </div>
+
+  </div><!-- /content -->
+
+</div><!-- /app-container -->
+
+<!-- 浮动添加按钮 -->
+<button class="btn-fab" id="fabBtn" title="添加待办事项">+</button>
+
+<!-- 模态框容器 -->
+<div id="modalContainer"></div>
+
+<script>
+// ==================== 数据管理 ====================
+const STORAGE_KEY = 'nurse_assistant_data';
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { return JSON.parse(raw); } catch(e) {}
+  }
+  return getDefaultData();
+}
+
+function getDefaultData() {
+  return {
+    tasks: [],
+    templates: [
+      {
+        id: 't1',
+        category: '护理记录',
+        title: '一般护理记录',
+        body: '患者神志【清醒/嗜睡/昏迷】，精神【良好/一般/差】。生命体征：T【】℃ P【】次/分 R【】次/分 BP【】/【】mmHg。遵医嘱给予【】治疗，患者无不适主诉。',
+        updatedAt: Date.now()
+      },
+      {
+        id: 't2',
+        category: '护理记录',
+        title: '术后护理记录',
+        body: '患者于【】在【】麻醉下行【】术，术后安返病房。切口敷料【干燥/渗血】，引流管【通畅/不畅】，引流量约【】ml，颜色【】。生命体征平稳，嘱患者卧床休息。',
+        updatedAt: Date.now()
+      },
+      {
+        id: 't3',
+        category: '交班报告',
+        title: '日常交班报告',
+        body: '本班患者共【】人，新入院【】人，出院【】人，手术【】人。危重患者：【床号+姓名+诊断】。特殊交班事项：【】。',
+        updatedAt: Date.now()
+      },
+      {
+        id: 't4',
+        category: '医嘱执行',
+        title: '输液记录',
+        body: '遵医嘱给予【】注射液【】ml + 【】注射液【】ml 静脉滴注，滴速【】滴/分。输液过程顺利，患者无不适。',
+        updatedAt: Date.now()
+      },
+      {
+        id: 't5',
+        category: '健康教育',
+        title: '出院健康指导',
+        body: '1. 饮食指导：【低盐低脂/糖尿病饮食/普食】，忌【】。\n2. 用药指导：【药名】【用法】【剂量】【注意事项】。\n3. 复诊时间：【】后至【】科门诊复查。\n4. 如有【不适症状】请及时就医。',
+        updatedAt: Date.now()
+      }
+    ],
+    drugs: [
+      { id:'d1', name:'头孢曲松钠', category:'抗生素', usage:'肌注或静注：成人1-2g/日，分1-2次', precautions:'用药前需做皮试；青霉素过敏者慎用；肾功能不全者调整剂量' },
+      { id:'d2', name:'左氧氟沙星', category:'抗生素', usage:'口服：0.1-0.2g/次，2-3次/日', precautions:'18岁以下禁用；孕妇慎用；避免日光直射' },
+      { id:'d3', name:'氨氯地平', category:'降压药', usage:'口服：5mg/次，1次/日，最大10mg/日', precautions:'肝功能不全者需减量；孕妇慎用' },
+      { id:'d4', name:'呋塞米', category:'利尿剂', usage:'口服：20-40mg/日；静注：20-40mg/次', precautions:'监测电解质；糖尿病患者注意血糖变化；肾功能不全者需调整剂量' },
+      { id:'d5', name:'胰岛素注射液', category:'降糖药', usage:'皮下注射，剂量遵医嘱个体化', precautions:'注意低血糖反应；注射部位需轮换；未开封2-8℃冷藏保存' },
+      { id:'d6', name:'氨溴索', category:'祛痰药', usage:'口服：30mg/次，3次/日', precautions:'胃溃疡患者慎用；孕妇前3个月慎用' },
+      { id:'d7', name:'地西泮', category:'镇静药', usage:'口服：2.5-10mg/次，2-4次/日', precautions:'长期使用可产生依赖性；老年人需减量；服药期间不可驾车' },
+      { id:'d8', name:'奥美拉唑', category:'消化系统', usage:'口服：20mg/次，1-2次/日，晨起空腹服用', precautions:'长期使用需监测胃泌素水平；肝功能不全者需减量' },
+      { id:'d9', name:'硝酸甘油', category:'心血管', usage:'舌下含服：0.5mg/次，可每5分钟重复，最多3次', precautions:'低血压患者禁用；青光眼患者禁用；避光保存' },
+      { id:'d10', name:'氯化钾注射液', category:'电解质', usage:'静滴：浓度≤0.3%，滴速≤0.5g/h', precautions:'严禁直接静注；肾功能不全者慎用；监测血钾浓度' },
+      { id:'d11', name:'地塞米松', category:'激素', usage:'口服：0.75-3mg/次，2-4次/日', precautions:'长期使用需逐渐减量；糖尿病患者监测血糖；感染患者需同时抗感染治疗' },
+      { id:'d12', name:'低分子肝素', category:'抗凝药', usage:'皮下注射，剂量据体重及用途而定', precautions:'出血倾向者禁用；监测血小板计数；注射部位可能产生血肿' },
+      { id:'d13', name:'布洛芬', category:'解热镇痛', usage:'口服：0.2-0.4g/次，每4-6小时一次', precautions:'胃溃疡患者禁用；哮喘患者慎用；肾功能不全者减量' },
+      { id:'d14', name:'西咪替丁', category:'消化系统', usage:'口服：0.2g/次，2次/日', precautions:'肾功能不全者减量；与其他药物合用时注意相互作用' },
+      { id:'d15', name:'肾上腺素', category:'急救药', usage:'皮下/肌注：0.25-1mg/次；静注需稀释后使用', precautions:'仅用于急救；高血压、甲亢患者慎用；注意监测心率血压' }
+    ],
+    queryLogs: []
+  };
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let appData = loadData();
+
+// ==================== 工具函数 ====================
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 6); }
+
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const week = ['日','一','二','三','四','五','六'][d.getDay()];
+  return `${y}年${m}月${day}日 星期${week}`;
+}
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function nowTime() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function timeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function cnTime(t) {
+  return t; // "HH:MM" format
+}
+
+// ==================== 时钟更新 ====================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  document.getElementById('dateDisplay').textContent = formatDate(now);
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// ==================== 标签切换 ====================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const page = tab.dataset.page;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    refreshCurrentPage(page);
+  });
+});
+
+function getCurrentPage() {
+  return document.querySelector('.tab.active')?.dataset.page || 'dashboard';
+}
+
+function refreshCurrentPage(page) {
+  switch(page) {
+    case 'dashboard': renderDashboard(); break;
+    case 'tasks': renderTaskList(); break;
+    case 'templates': renderTemplates(); break;
+    case 'drugs': renderDrugPage(); break;
+  }
+}
+
+// ==================== 模态框 ====================
+function showModal(title, bodyHtml, onSave) {
+  const container = document.getElementById('modalContainer');
+  container.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <h3>${title}</h3>
+        ${bodyHtml}
+        <div class="form-actions">
+          <button class="btn btn-secondary" id="modalCancel">取消</button>
+          <button class="btn btn-primary" id="modalSave">保存</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'modalOverlay') closeModal();
+  });
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalSave').addEventListener('click', () => {
+    if (onSave) onSave();
+  });
+}
+
+function closeModal() {
+  document.getElementById('modalContainer').innerHTML = '';
+}
+
+// ==================== 1. 待办事项 ====================
+function getTodayTasks() {
+  const t = today();
+  return appData.tasks.filter(task => task.date === t).sort((a,b) => a.time.localeCompare(b.time));
+}
+
+function renderDashboard() {
+  const tasks = getTodayTasks();
+  const done = tasks.filter(t => t.completed).length;
+  const total = tasks.length;
+  const pending = total - done;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statPending').textContent = pending;
+
+  // 即将到来（未完成且时间 >= 现在）
+  const currentMin = timeToMinutes(nowTime());
+  const upcoming = tasks.filter(t => !t.completed && timeToMinutes(t.time) >= currentMin).slice(0, 3);
+  const upcomingDiv = document.getElementById('upcomingTasks');
+  if (upcoming.length === 0) {
+    upcomingDiv.innerHTML = '<div class="empty-state"><p>今天没有待处理的任务</p></div>';
+  } else {
+    upcomingDiv.innerHTML = upcoming.map(t => `
+      <div class="card" style="border-left:3px solid var(--primary);">
+        <div class="card-header">
+          <span class="card-title">${escHtml(t.title)}</span>
+          <span class="card-time">${t.time}</span>
+        </div>
+        ${t.content ? `<div class="card-content">${escHtml(t.content)}</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // 今日全部
+  const allDiv = document.getElementById('todayAllTasks');
+  if (tasks.length === 0) {
+    allDiv.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>今天还没有计划</p><p style="font-size:12px;margin-top:4px;">点击右下角 + 按钮添加待办</p></div>';
+  } else {
+    allDiv.innerHTML = tasks.map(t => `
+      <div class="card ${t.completed ? 'task-completed' : ''}">
+        <div class="card-header">
+          <span class="card-title">${escHtml(t.title)}${t.completed ? '<span class="badge-done">已完成</span>' : ''}</span>
+          <span class="card-time">${t.time}</span>
+        </div>
+        ${t.content ? `<div class="card-content">${escHtml(t.content)}</div>` : ''}
+      </div>
+    `).join('');
+  }
+}
+
+function renderTaskList(filter) {
+  filter = filter || document.querySelector('#page-tasks .filter-chip.active')?.dataset.filter || 'all';
+  const tasks = getTodayTasks();
+  let filtered;
+  if (filter === 'done') filtered = tasks.filter(t => t.completed);
+  else if (filter === 'pending') filtered = tasks.filter(t => !t.completed);
+  else filtered = tasks;
+
+  const div = document.getElementById('taskList');
+  if (filtered.length === 0) {
+    div.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>暂无待办事项</p></div>';
+    return;
+  }
+
+  div.innerHTML = filtered.map(t => `
+    <div class="card ${t.completed ? 'task-completed' : ''}">
+      <div class="card-header">
+        <span class="card-title" style="cursor:pointer;" onclick="toggleTask('${t.id}')">
+          ${t.completed ? '✅ ' : '⬜ '}${escHtml(t.title)}
+        </span>
+        <span class="card-time">${t.time}</span>
+      </div>
+      ${t.content ? `<div class="card-content">${escHtml(t.content)}</div>` : ''}
+      <div class="card-actions">
+        <button class="btn btn-sm btn-primary" onclick="editTask('${t.id}')">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTask(id) {
+  const task = appData.tasks.find(t => t.id === id);
+  if (task) {
+    task.completed = !task.completed;
+    saveData(appData);
+    refreshCurrentPage(getCurrentPage());
+  }
+}
+
+function editTask(id) {
+  const task = appData.tasks.find(t => t.id === id);
+  if (!task) return;
+  showTaskForm(task);
+}
+
+function deleteTask(id) {
+  if (!confirm('确定删除这条待办事项吗？')) return;
+  appData.tasks = appData.tasks.filter(t => t.id !== id);
+  saveData(appData);
+  refreshCurrentPage(getCurrentPage());
+}
+
+function showTaskForm(editData) {
+  const isEdit = !!editData;
+  const title = isEdit ? '编辑待办事项' : '新建待办事项';
+  const defaults = editData || { time: nowTime(), date: today(), title: '', content: '' };
+
+  const bodyHtml = `
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="formDate" value="${defaults.date}">
+    </div>
+    <div class="form-group">
+      <label>时间 ⏰</label>
+      <input type="time" id="formTime" value="${defaults.time}">
+    </div>
+    <div class="form-group">
+      <label>标题 *</label>
+      <input type="text" id="formTitle" value="${escHtml(defaults.title)}" placeholder="例如：给3床换药">
+    </div>
+    <div class="form-group">
+      <label>详细内容</label>
+      <textarea id="formContent" rows="3" placeholder="补充说明...">${escHtml(defaults.content)}</textarea>
+    </div>
+    ${isEdit ? `<div class="form-group">
+      <label><input type="checkbox" id="formCompleted" ${defaults.completed ? 'checked' : ''}> 标记为已完成</label>
+    </div>` : ''}
+  `;
+
+  showModal(title, bodyHtml, () => {
+    const date = document.getElementById('formDate').value;
+    const time = document.getElementById('formTime').value;
+    const taskTitle = document.getElementById('formTitle').value.trim();
+    const content = document.getElementById('formContent').value.trim();
+
+    if (!taskTitle) { alert('请输入标题'); return; }
+
+    if (isEdit) {
+      Object.assign(editData, {
+        date, time, title: taskTitle, content,
+        completed: document.getElementById('formCompleted')?.checked || false,
+        reminded: false
+      });
+    } else {
+      appData.tasks.push({
+        id: genId(),
+        date, time, title: taskTitle, content,
+        completed: false,
+        reminded: false
+      });
+    }
+
+    appData.tasks.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    saveData(appData);
+    closeModal();
+    refreshCurrentPage(getCurrentPage());
+  });
+}
+
+// FAB 按钮
+document.getElementById('fabBtn').addEventListener('click', () => {
+  showTaskForm(null);
+});
+
+// 筛选
+document.querySelector('#page-tasks .filter-row')?.addEventListener('click', (e) => {
+  if (e.target.classList.contains('filter-chip')) {
+    document.querySelectorAll('#page-tasks .filter-chip').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    renderTaskList(e.target.dataset.filter);
+  }
+});
+
+// ==================== 2. 定时提醒 ====================
+let notifiedToday = new Set();
+
+function checkReminders() {
+  if (!('Notification' in window)) return; // 浏览器不支持
+
+  const currentDate = today();
+  const currentTime = nowTime();
+  const tasks = appData.tasks.filter(t => t.date === currentDate && !t.completed && !t.reminded && t.time === currentTime);
+
+  tasks.forEach(task => {
+    const key = task.id + '-' + task.date + '-' + task.time;
+    if (notifiedToday.has(key)) return;
+    notifiedToday.add(key);
+
+    if (Notification.permission === 'granted') {
+      new Notification('⏰ 护理提醒 - ' + task.title, {
+        body: task.content || '该执行这项护理任务了',
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏥</text></svg>',
+        tag: task.id,
+        requireInteraction: true
+      });
+      task.reminded = true;
+      saveData(appData);
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') {
+          task.reminded = false; // 下次轮询时再触发
+        }
+      });
+    }
+  });
+}
+
+// 首次加载时请求通知权限
+if ('Notification' in window && Notification.permission === 'default') {
+  // 等用户交互后再请求
+  document.addEventListener('click', function requestNotif() {
+    Notification.requestPermission();
+    document.removeEventListener('click', requestNotif);
+  }, { once: false });
+}
+
+setInterval(checkReminders, 30000); // 每30秒检查
+checkReminders();
+
+// ==================== 3. 文书模板 ====================
+const TEMPLATE_CATEGORIES = ['全部', '护理记录', '交班报告', '医嘱执行', '健康教育', '其他'];
+
+function renderTemplateCategories() {
+  const div = document.getElementById('categoryList');
+  div.innerHTML = TEMPLATE_CATEGORIES.map((c, i) =>
+    `<span class="category-item ${i === 0 ? 'active' : ''}" data-category="${c}">${c}</span>`
+  ).join('');
+
+  div.addEventListener('click', (e) => {
+    if (e.target.classList.contains('category-item')) {
+      div.querySelectorAll('.category-item').forEach(item => item.classList.remove('active'));
+      e.target.classList.add('active');
+      renderTemplates(e.target.dataset.category);
+    }
+  });
+}
+
+function renderTemplates(category) {
+  category = category || document.querySelector('#categoryList .category-item.active')?.dataset.category || '全部';
+  let filtered = appData.templates;
+  if (category !== '全部') {
+    filtered = filtered.filter(t => t.category === category);
+  }
+
+  const div = document.getElementById('templateList');
+  if (filtered.length === 0) {
+    div.innerHTML = '<div class="empty-state"><div class="empty-icon">📄</div><p>暂无模板</p></div>';
+  } else {
+    div.innerHTML = filtered.map(t => `
+      <div class="card template-card" onclick="copyTemplate('${t.id}')">
+        <div class="template-category-badge">${escHtml(t.category)}</div>
+        <div class="card-header">
+          <span class="card-title">📋 ${escHtml(t.title)}</span>
+        </div>
+        <div class="card-content">${escHtml(t.body)}</div>
+        <div class="card-actions" onclick="event.stopPropagation();">
+          <button class="btn btn-sm btn-primary" onclick="editTemplate('${t.id}')">编辑</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTemplate('${t.id}')">删除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 底部添加按钮
+  div.innerHTML += `
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-primary" onclick="editTemplate()">+ 新建模板</button>
+    </div>`;
+}
+
+function copyTemplate(id) {
+  const t = appData.templates.find(tp => tp.id === id);
+  if (!t) return;
+  navigator.clipboard.writeText(t.body).then(() => {
+    showToast('模板内容已复制到剪贴板 ✓');
+  }).catch(() => {
+    showToast('复制失败，请手动选择复制');
+  });
+}
+
+function editTemplate(editData) {
+  const isEdit = !!editData;
+  const title = isEdit ? '编辑模板' : '新建模板';
+  const defaults = editData || { category: '护理记录', title: '', body: '' };
+
+  const bodyHtml = `
+    <div class="form-group">
+      <label>分类</label>
+      <select id="formTplCategory">
+        ${TEMPLATE_CATEGORIES.filter(c => c !== '全部').map(c =>
+          `<option value="${c}" ${c === defaults.category ? 'selected' : ''}>${c}</option>`
+        ).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>模板名称 *</label>
+      <input type="text" id="formTplTitle" value="${escHtml(defaults.title)}" placeholder="例如：PICC维护记录">
+    </div>
+    <div class="form-group">
+      <label>模板内容 *</label>
+      <textarea id="formTplBody" rows="6" placeholder="输入模板内容，可用【】标记需要填写的部分...">${escHtml(defaults.body)}</textarea>
+    </div>
+  `;
+
+  showModal(title, bodyHtml, () => {
+    const category = document.getElementById('formTplCategory').value;
+    const tplTitle = document.getElementById('formTplTitle').value.trim();
+    const body = document.getElementById('formTplBody').value.trim();
+
+    if (!tplTitle || !body) { alert('请填写模板名称和内容'); return; }
+
+    if (isEdit) {
+      Object.assign(editData, { category, title: tplTitle, body, updatedAt: Date.now() });
+    } else {
+      appData.templates.push({ id: genId(), category, title: tplTitle, body, updatedAt: Date.now() });
+    }
+    saveData(appData);
+    closeModal();
+    renderTemplates();
+  });
+}
+
+function deleteTemplate(id) {
+  if (!confirm('确定删除这个模板吗？')) return;
+  appData.templates = appData.templates.filter(t => t.id !== id);
+  saveData(appData);
+  renderTemplates();
+}
+
+// ==================== 4. 药物查询 ====================
+function renderDrugPage() {
+  // 搜索事件
+  const searchInput = document.getElementById('drugSearch');
+  searchInput.value = '';
+  document.getElementById('drugResults').innerHTML = '';
+  document.getElementById('uploadPreview').innerHTML = '';
+
+  searchInput.oninput = function() {
+    const q = this.value.trim().toLowerCase();
+    const results = document.getElementById('drugResults');
+    if (!q) { results.innerHTML = ''; return; }
+
+    const matched = appData.drugs.filter(d =>
+      d.name.includes(q) || d.category.includes(q) || d.usage.includes(q)
+    );
+
+    if (matched.length === 0) {
+      results.innerHTML = '<div class="empty-state"><p>未找到匹配的药品信息</p><p style="font-size:12px;">该药品暂未收录，可联系管理员更新药品词典</p></div>';
+    } else {
+      results.innerHTML = matched.map(d => `
+        <div class="drug-result">
+          <div class="drug-name">💊 ${escHtml(d.name)}</div>
+          <div class="drug-category">分类：${escHtml(d.category)}</div>
+          <div class="drug-section"><strong>用法用量：</strong>${escHtml(d.usage)}</div>
+          <div class="drug-section"><strong>注意事项：</strong>${escHtml(d.precautions)}</div>
+        </div>
+      `).join('');
+    }
+  };
+
+  // 图片上传
+  setupImageUpload();
+}
+
+function setupImageUpload() {
+  const uploadZone = document.getElementById('uploadZone');
+  const imageInput = document.getElementById('imageInput');
+
+  // 清除旧事件
+  const newZone = uploadZone.cloneNode(true);
+  uploadZone.parentNode.replaceChild(newZone, uploadZone);
+  const newInput = imageInput.cloneNode(true);
+  imageInput.parentNode.replaceChild(newInput, imageInput);
+
+  document.getElementById('uploadZone').addEventListener('click', () => {
+    document.getElementById('imageInput').click();
+  });
+
+  document.getElementById('imageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const preview = document.getElementById('uploadPreview');
+      preview.innerHTML = `
+        <img src="${ev.target.result}" class="upload-preview" alt="药品图片">
+        <p style="font-size:12px;color:var(--text-secondary);text-align:center;">图片已保存（OCR识别功能开发中）</p>
+      `;
+      // 记录查询日志
+      appData.queryLogs.push({
+        id: genId(),
+        type: 'image',
+        content: ev.target.result.substring(0, 200) + '...',
+        timestamp: Date.now()
+      });
+      saveData(appData);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ==================== Toast 提示 ====================
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+    background:#333; color:#fff; padding:10px 24px; border-radius:20px;
+    font-size:14px; z-index:999; animation:fadeIn 0.2s;
+    pointer-events:none;
+  `;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.3s';
+    setTimeout(() => el.remove(), 300);
+  }, 2000);
+}
+
+// ==================== HTML 转义 ====================
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ==================== 快捷键 ====================
+document.addEventListener('keydown', (e) => {
+  // Ctrl+N 新建待办
+  if (e.ctrlKey && e.key === 'n') {
+    e.preventDefault();
+    showTaskForm(null);
+  }
+  // 数字键切换标签
+  if (e.ctrlKey && e.key >= '1' && e.key <= '4') {
+    e.preventDefault();
+    const idx = parseInt(e.key) - 1;
+    const tabs = document.querySelectorAll('.tab');
+    if (tabs[idx]) tabs[idx].click();
+  }
+});
+
+// ==================== 初始化 ====================
+function init() {
+  renderTemplateCategories();
+  renderTemplates();
+  renderDashboard();
+
+  // 初始加载药物查询页的事件
+  const drugSearch = document.getElementById('drugSearch');
+  if (drugSearch) {
+    drugSearch.oninput = function() {
+      const q = this.value.trim().toLowerCase();
+      const results = document.getElementById('drugResults');
+      if (!q) { results.innerHTML = ''; return; }
+      const matched = appData.drugs.filter(d =>
+        d.name.includes(q) || d.category.includes(q) || d.usage.includes(q)
+      );
+      if (matched.length === 0) {
+        results.innerHTML = '<div class="empty-state"><p>未找到匹配的药品信息</p></div>';
+      } else {
+        results.innerHTML = matched.map(d => `
+          <div class="drug-result">
+            <div class="drug-name">💊 ${escHtml(d.name)}</div>
+            <div class="drug-category">分类：${escHtml(d.category)}</div>
+            <div class="drug-section"><strong>用法用量：</strong>${escHtml(d.usage)}</div>
+            <div class="drug-section"><strong>注意事项：</strong>${escHtml(d.precautions)}</div>
+          </div>
+        `).join('');
+      }
+    };
+  }
+  setupImageUpload();
+}
+
+init();
+
+// 页面可见性变化时刷新
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    updateClock();
+    refreshCurrentPage(getCurrentPage());
+  }
+});
+
+console.log('🏥 护士工作助手已就绪');
+console.log('快捷键：Ctrl+1~4 切换标签 | Ctrl+N 新建待办');
+
+// 注册 Service Worker（PWA 离线支持）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    console.log('SW registered');
+  }).catch(() => {
+    // 静默失败，不影响主功能
+  });
+}
+</script>
+</body>
+</html>
