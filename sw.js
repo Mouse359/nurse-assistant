@@ -1,10 +1,12 @@
 // Service Worker - 护士工作助手 PWA
-const CACHE = 'nurse-assistant-v1';
+const CACHE = 'nurse-assistant-v2';
 const ASSETS = [
   '.',
   'index.html',
   'manifest.json',
-  'icon.svg'
+  'icon.svg',
+  'icon-192.png',
+  'icon-512.png'
 ];
 
 // 安装：预缓存核心文件
